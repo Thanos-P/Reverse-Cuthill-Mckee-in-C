@@ -37,9 +37,9 @@ LDFLAGS =
 # define any libraries to link into executable:
 #   To ling libusb-1.0 :
 #   LIBS = -lusb-1.0
-LIBS = -pthread -lm
+LIBS =
 # define the source file for the library
-SRC = knnring
+SRC = RCM
 
 # define the different possible executables
 TYPES = sequential
@@ -55,23 +55,23 @@ SRCDIR = ./src
 # call everytime
 .PRECIOUS: %.a
 
-all:  $(addprefix $(MAIN)_, $(TYPES))
+all: $(addprefix $(MAIN)_, $(TYPES))
 
 lib: $(addprefix $(LIBDIR)/, $(addsuffix .a, $(addprefix $(SRC)_, $(TYPES))))
 
-$(MAIN)_%: $(MAIN).c $(LIBDIR)/$(SRC)_%.a
+$(MAIN)_%: $(SRCDIR)/$(MAIN).c $(LIBDIR)/$(SRC)_%.a
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 # this is a suffix replacement rule for building .o's from .c's
 # it uses automatic variables $<: the name of the prerequisite of
 # the rule(a .cpp file) and $@: the name of the target of the rule (a .o file)
 
-.o.a:
+$(LIBDIR)/$(SRC)_%.a: $(LIBDIR)/$(SRC)_%.o
 	ar rcs $@ $<
 
 # (see the gnu make manual section about automatic variables)
-.c.o:
+$(LIBDIR)/$(SRC)_$(TYPES).o: $(SRCDIR)/$(SRC)_$(TYPES).c
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
 
 clean:
-	$(RM) $(LIBDIR)/*.o *~ $(addprefix $(MAIN)_, $(TYPES))
+	$(RM) $(LIBDIR)/*.o $(LIBDIR)/*.a *~ $(addprefix $(MAIN)_, $(TYPES))

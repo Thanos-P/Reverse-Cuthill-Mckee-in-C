@@ -1,4 +1,4 @@
-/**
+/*
  * @file   queue.h
  * @author athanasps <athanasps@ece.auth.gr>
  *         Thanos Paraskevas
@@ -9,17 +9,20 @@
 #define QUEUE_H
 
 #include <stdio.h>
-#include <pthread.h>
 
 #define QUEUESIZE 100
 
+// Queue element structure declaration
+typedef struct {
+  int num;
+  int degree;
+} node;
+
 // Queue structure declaration
 typedef struct {
-  int buf[QUEUESIZE];
+  node buf[QUEUESIZE];
   long head, tail;
   int full, empty;
-  pthread_mutex_t *mut;
-  pthread_cond_t *notFull, *notEmpty;
 } queue;
 
 queue *queueInit (void)
@@ -33,28 +36,16 @@ queue *queueInit (void)
   q->full = 0;
   q->head = 0;
   q->tail = 0;
-  q->mut = (pthread_mutex_t *) malloc (sizeof (pthread_mutex_t));
-  pthread_mutex_init (q->mut, NULL);
-  q->notFull = (pthread_cond_t *) malloc (sizeof (pthread_cond_t));
-  pthread_cond_init (q->notFull, NULL);
-  q->notEmpty = (pthread_cond_t *) malloc (sizeof (pthread_cond_t));
-  pthread_cond_init (q->notEmpty, NULL);
 
   return (q);
 }
 
 void queueDelete (queue *q)
 {
-  pthread_mutex_destroy (q->mut);
-  free (q->mut);
-  pthread_cond_destroy (q->notFull);
-  free (q->notFull);
-  pthread_cond_destroy (q->notEmpty);
-  free (q->notEmpty);
   free (q);
 }
 
-void queueAdd (queue *q, int val)
+void queueAdd (queue *q, node val)
 {
   q->buf[q->tail] = val;
   q->tail++;
@@ -67,7 +58,7 @@ void queueAdd (queue *q, int val)
   return;
 }
 
-void queueDel (queue *q, int *val)
+void queueDel (queue *q, node *val)
 {
   *val = q->buf[q->head];
 
