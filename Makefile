@@ -24,7 +24,7 @@ SHELL := /bin/bash
 CC = gcc-7
 
 # define compile-time flags
-CFLAGS = -O3 -Wall
+CFLAGS = -O3 -Wall -fcilkplus
 
 # define any directories containing header files
 INCLUDES = -Iinc
@@ -42,7 +42,7 @@ LIBS =
 SRC = RCM
 
 # define the different possible executables
-TYPES = sequential
+TYPES = sequential cilk
 
 # define the executable file name
 MAIN = main
@@ -70,7 +70,7 @@ $(LIBDIR)/$(SRC)_%.a: $(LIBDIR)/$(SRC)_%.o
 	ar rcs $@ $<
 
 # (see the gnu make manual section about automatic variables)
-$(LIBDIR)/$(SRC)_$(TYPES).o: $(SRCDIR)/$(SRC)_$(TYPES).c
+$(LIBDIR)/$(SRC)_%.o: $(SRCDIR)/$(SRC)_%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
 
 clean:

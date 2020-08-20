@@ -18,19 +18,29 @@ int *ReverseCuthillMckee(bool *A, const int n);
 
 int main (){
   // Initialize adjacency matrix
-  bool A[] = {
-        1, 1, 0, 0, 0, 0, 1, 0, 1, 0,
-        1, 1, 0, 0, 1, 0, 1, 0, 0, 1,
-        0, 0, 1, 0, 1, 0, 1, 0, 0, 0,
-        0, 0, 0, 1, 1, 1, 0, 0, 1, 0,
-        0, 1, 1, 1, 1, 1, 0, 0, 0, 1,
-        0, 0, 0, 1, 1, 1, 0, 0, 0, 0,
-        1, 1, 1, 0, 0, 0, 1, 0, 0, 0,
-        0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
-        1, 0, 0, 1, 0, 0, 0, 1, 1, 0,
-        0, 1, 0, 0, 1, 0, 0, 1, 0, 1
-  };
-  const int n = 10;
+  // bool A[] = {
+  //       1, 1, 0, 0, 0, 0, 1, 0, 1, 0,
+  //       1, 1, 0, 0, 1, 0, 1, 0, 0, 1,
+  //       0, 0, 1, 0, 1, 0, 1, 0, 0, 0,
+  //       0, 0, 0, 1, 1, 1, 0, 0, 1, 0,
+  //       0, 1, 1, 1, 1, 1, 0, 0, 0, 1,
+  //       0, 0, 0, 1, 1, 1, 0, 0, 0, 0,
+  //       1, 1, 1, 0, 0, 0, 1, 0, 0, 0,
+  //       0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
+  //       1, 0, 0, 1, 0, 0, 0, 1, 1, 0,
+  //       0, 1, 0, 0, 1, 0, 0, 1, 0, 1
+  // };
+  const int n = 2713;
+  int *B = (int *)malloc(n*n*sizeof(int));
+  bool *A = (bool *)malloc(n*n*sizeof(bool));;
+  // Read the matrix
+  FILE *fp = fopen("matrix_barbell.bin", "rb");
+  size_t size = fread(B, sizeof(int), n * n, fp);
+  if(size!=n*n) exit(EXIT_FAILURE);
+  fclose(fp);
+
+  for(int i = 0; i < n*n; i++)
+    A[i] = (bool) B[i];
 
   // Time variables
   struct timeval startwtime, endwtime;
@@ -50,31 +60,33 @@ int main (){
   }
   printf("\n");
 
-  printf("\nInitial array\n");
-  for(int i = 0; i < n; i++){
-    for(int j = 0; j < n; j++){
-      if(A(i,j))
-        printf("■ ");
-      else
-        printf("□ ");
-    }
-    printf("\n");
-  }
-
-  printf("\nPermutated array\n");
-  for(int i = 0; i < n; i++){
-    for(int j = 0; j < n; j++){
-      if(A(R[i],R[j]))
-        printf("■ ");
-      else
-        printf("□ ");
-    }
-    printf("\n");
-  }
+  // printf("\nInitial array\n");
+  // for(int i = 0; i < n; i++){
+  //   for(int j = 0; j < n; j++){
+  //     if(A(i,j))
+  //       printf("■ ");
+  //     else
+  //       printf("□ ");
+  //   }
+  //   printf("\n");
+  // }
+  //
+  // printf("\nPermutated array\n");
+  // for(int i = 0; i < n; i++){
+  //   for(int j = 0; j < n; j++){
+  //     if(A(R[i],R[j]))
+  //       printf("■ ");
+  //     else
+  //       printf("□ ");
+  //   }
+  //   printf("\n");
+  // }
 
   printf("\ntotal time: %f\n", totaltime);
 
   free(R);
+  free(A);
+  free(B);
 
   return 0;
 }

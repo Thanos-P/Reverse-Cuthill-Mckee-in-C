@@ -40,10 +40,10 @@ int *ReverseCuthillMckee(bool *A, const int n){
   int *degrees = findDegrees(A,n);
 
   // Initialize queue
-  queue *Q = queueInit();
+  queue *Q = queueInit(n);
   if(Q ==  NULL){
     fprintf(stderr, "Queue Init failed.\n");
-    exit(1);
+    exit(EXIT_FAILURE);
   }
 
   // Initialize node elements
@@ -76,7 +76,7 @@ int *ReverseCuthillMckee(bool *A, const int n){
     // Assert that an index has been found
     if(minIndex == -1){
       fprintf(stderr, "An error has occured.\n");
-      exit(1);
+      exit(EXIT_FAILURE);
     }
     // Find minimum degree node index
     for(int i = minIndex + 1; i < n; i++){
@@ -95,9 +95,11 @@ int *ReverseCuthillMckee(bool *A, const int n){
       node qfront, newNode;
       queueDel(Q, &qfront);
 
+      // Keep track of start index of the new elements
+      // to be sorted later
       int newElementsStartIndex = Q->tail;
 
-      // Find all neighboors of extracted element and add them to Q
+      // Find all non-visited neighboors of extracted element and add them to Q
       for(int i = 0; i < n; i++){
         if(i != qfront.num && A(qfront.num,i) && !visited[i]){
           newNode.num = i;
