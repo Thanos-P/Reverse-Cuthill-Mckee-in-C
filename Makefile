@@ -41,8 +41,11 @@ LIBS =
 # define the source file for the library
 SRC = RCM
 
+#define auxiliary file names
+AUX = queue myQuickSort mmio
+
 # define the different possible executables
-TYPES = sequential cilk
+TYPES = sequential
 
 # define the executable file name
 MAIN = main
@@ -57,20 +60,19 @@ SRCDIR = ./src
 
 all: $(addprefix $(MAIN)_, $(TYPES))
 
-lib: $(addprefix $(LIBDIR)/, $(addsuffix .a, $(addprefix $(SRC)_, $(TYPES))))
+lib: $(addprefix $(LIBDIR)/, $(addsuffix .a, $(addprefix $(SRC)_, $(TYPES)))) $(addprefix $(LIBDIR)/, $(addsuffix .a, $(AUX)))
 
-$(MAIN)_%: $(SRCDIR)/$(MAIN).c $(LIBDIR)/$(SRC)_%.a
+$(MAIN)_%: $(SRCDIR)/$(MAIN).c $(LIBDIR)/$(SRC)_%.a $(addprefix $(LIBDIR)/, $(addsuffix .a, $(AUX)))
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ $^ $(LDFLAGS) $(LIBS)
 
 # this is a suffix replacement rule for building .o's from .c's
 # it uses automatic variables $<: the name of the prerequisite of
 # the rule(a .cpp file) and $@: the name of the target of the rule (a .o file)
 
-$(LIBDIR)/$(SRC)_%.a: $(LIBDIR)/$(SRC)_%.o
+$(LIBDIR)/%.a: $(LIBDIR)/%.o
 	ar rcs $@ $<
 
-# (see the gnu make manual section about automatic variables)
-$(LIBDIR)/$(SRC)_%.o: $(SRCDIR)/$(SRC)_%.c
+$(LIBDIR)/%.o: $(SRCDIR)/%.c
 	$(CC) $(CFLAGS) $(INCLUDES) -o $@ -c $<
 
 clean:

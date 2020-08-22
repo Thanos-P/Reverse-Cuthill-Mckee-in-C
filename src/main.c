@@ -1,53 +1,97 @@
 /*
- * @file   main.c
- * @author athanasps <athanasps@ece.auth.gr>
- *         Thanos Paraskevas
+ * @file        main.c
+ * @reference   https://math.nist.gov/MatrixMarket/resources.html
+ * @author      athanasps <athanasps@ece.auth.gr>
+ *              Thanos Paraskevas
  *
  */
 
 #include <stdio.h>
-#include <stdbool.h>
 #include <stdlib.h>
 #include <time.h>
 #include <sys/time.h>
 #include <sys/times.h>
 
+#include "mmio.h"
+
 #define A(i,j)  *(A + (i) * n + (j))
 
-int *ReverseCuthillMckee(bool *A, const int n);
+int *ReverseCuthillMckee(int *I, int *J, int nz, int M);
 
-int main (){
-  // Initialize adjacency matrix
-  // bool A[] = {
-  //       1, 1, 0, 0, 0, 0, 1, 0, 1, 0,
-  //       1, 1, 0, 0, 1, 0, 1, 0, 0, 1,
-  //       0, 0, 1, 0, 1, 0, 1, 0, 0, 0,
-  //       0, 0, 0, 1, 1, 1, 0, 0, 1, 0,
-  //       0, 1, 1, 1, 1, 1, 0, 0, 0, 1,
-  //       0, 0, 0, 1, 1, 1, 0, 0, 0, 0,
-  //       1, 1, 1, 0, 0, 0, 1, 0, 0, 0,
-  //       0, 0, 0, 0, 0, 0, 0, 1, 1, 1,
-  //       1, 0, 0, 1, 0, 0, 0, 1, 1, 0,
-  //       0, 1, 0, 0, 1, 0, 0, 1, 0, 1
-  // };
-  const int n = 2713;
-  int *B = (int *)malloc(n*n*sizeof(int));
-  bool *A = (bool *)malloc(n*n*sizeof(bool));;
-  // Read the matrix
-  FILE *fp = fopen("matrix_barbell.bin", "rb");
-  size_t size = fread(B, sizeof(int), n * n, fp);
-  if(size!=n*n) exit(EXIT_FAILURE);
-  fclose(fp);
+int main (int argc, char *argv[]){
 
-  for(int i = 0; i < n*n; i++)
-    A[i] = (bool) B[i];
+  int ret_code;
+  MM_typecode matcode;
+  FILE *f;
+  // M,N --> dimensions of sparse matrix
+  // nz  --> nonzeros in .mtx file
+  int M, N, nz;
+  // I   --> rows recorded at .mtx file
+  // J   --> columns recorded at .mtx file
+  int *I, *J;
+  // val --> values of edges recorded at .mtx file
+  double *val;
+
+  // Check input arguements
+  if(argc < 2){
+    fprintf(stderr, "Usage: %s [martix-market-filename]\n", argv[0]);
+    exit(EXIT_FAILURE);
+  }
+  else{
+    if((f = fopen(argv[1], "r")) == NULL){
+      fprintf(stderr, "File \'%s\' not found.\n", argv[1]);
+      exit(EXIT_FAILURE);
+    }
+  }
+
+  // Read file banner
+  if(mm_read_banner(f, &matcode) != 0){
+    fprintf(stderr, "Could not process Matrix Market banner.\n");
+    exit(EXIT_FAILURE);
+  }
+
+  // Check for correct file types
+  if(!mm_is_matrix(matcode) || !mm_is_symmetric(matcode))
+  {
+    fprintf(stderr, "Sorry, this application does not support ");
+    fprintf(stderr, "Matrix Market type: [%s]\n", mm_typecode_to_str(matcode));
+    exit(EXIT_FAILURE);
+  }
+
+  // Find out size of sparse matrix
+  if((ret_code = mm_read_mtx_crd_size(f, &M, &N, &nz)) !=0)
+    exit(EXIT_FAILURE);
+
+  if(M != N)
+    fprintf(stderr, "Error: dimensions of sparse matrix not equal.");
+
+  // Reseve memory for matrices
+  I = (int *) malloc(nz * sizeof(int));
+  J = (int *) malloc(nz * sizeof(int));
+  val = (double *) malloc(nz * sizeof(double));
+
+  // Read values
+  for(int i = 0; i < nz; i++){
+      int num = fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i]);
+      if(num == 0){
+        fprintf(stderr, "Read error: not enough elements\n");
+        exit(EXIT_FAILURE);
+      }
+      // Adjust from 1-based to 0-based
+      I[i]--;
+      J[i]--;
+  }
+
+  // Close file
+  if (f != stdin) fclose(f);
 
   // Time variables
   struct timeval startwtime, endwtime;
   double totaltime;
 
+  // Call RCM
   gettimeofday(&startwtime, NULL);
-  int *R = ReverseCuthillMckee(A,n);
+  int *R = ReverseCuthillMckee(I, J, nz, M);
   gettimeofday(&endwtime, NULL);
 
   totaltime = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6
@@ -55,38 +99,17 @@ int main (){
 
   // print results
   printf("\nPermutation array: ");
-  for(int i = 0; i < n; i++){
+  for(int i = 0; i < M; i++){
     printf("%d ", R[i]);
   }
   printf("\n");
 
-  // printf("\nInitial array\n");
-  // for(int i = 0; i < n; i++){
-  //   for(int j = 0; j < n; j++){
-  //     if(A(i,j))
-  //       printf("■ ");
-  //     else
-  //       printf("□ ");
-  //   }
-  //   printf("\n");
-  // }
-  //
-  // printf("\nPermutated array\n");
-  // for(int i = 0; i < n; i++){
-  //   for(int j = 0; j < n; j++){
-  //     if(A(R[i],R[j]))
-  //       printf("■ ");
-  //     else
-  //       printf("□ ");
-  //   }
-  //   printf("\n");
-  // }
-
   printf("\ntotal time: %f\n", totaltime);
 
   free(R);
-  free(A);
-  free(B);
+  free(I);
+  free(J);
+  free(val);
 
   return 0;
 }
