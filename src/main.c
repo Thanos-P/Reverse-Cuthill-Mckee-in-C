@@ -65,12 +65,15 @@ int main (int argc, char *argv[]){
   if(M != N)
     fprintf(stderr, "Error: dimensions of sparse matrix not equal.");
 
+  // Read values
+  printf("\nAllocating space...\n");
   // Reseve memory for matrices
   I = (int *) malloc(nz * sizeof(int));
   J = (int *) malloc(nz * sizeof(int));
   val = (double *) malloc(nz * sizeof(double));
 
   // Read values
+  printf("Loading file...\n");
   for(int i = 0; i < nz; i++){
       int num = fscanf(f, "%d %d %lg\n", &I[i], &J[i], &val[i]);
       if(num == 0){
@@ -97,12 +100,12 @@ int main (int argc, char *argv[]){
   totaltime = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6
             + endwtime.tv_sec - startwtime.tv_sec);
 
-  // print results
-  printf("\nPermutation array: ");
-  for(int i = 0; i < M; i++){
-    printf("%d ", R[i]);
-  }
-  printf("\n");
+  // // print results
+  // printf("\nPermutation array: ");
+  // for(int i = 0; i < M; i++){
+  //   printf("%d ", R[i]);
+  // }
+  // printf("\n");
 
   printf("\ntotal time: %f\n", totaltime);
 

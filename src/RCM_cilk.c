@@ -1,136 +1,176 @@
 /*
- * @file        RCM_cilk.h
+ * @file        RCM_cilk.c
  * @reference   https://www.geeksforgeeks.org/reverse-cuthill-mckee-algorithm/
  * @author      athanasps <athanasps@ece.auth.gr>
  *              Thanos Paraskevas
  *
  */
 
-#include <stdio.h>
-#include <stdbool.h>
-#include <stdlib.h>
-#include <cilk/cilk.h>
-#include <cilk/cilk_api.h>
+ #include <stdio.h>
+ #include <stdbool.h>
+ #include <stdlib.h>
+ #include <cilk/cilk.h>
+ #include <cilk/cilk_api.h>
 
+ #include "myQuickSort.h"
+ #include "queue.h"
 
-#include "myQuickSort.h"
+ // Utility function to find degree of each node
+ // I  --> rows recorded at .mtx file
+ // J  --> columns recorded at .mtx file
+ // nz --> nonzeros in .mtx file
+ // totalDegrees --> the sum of all degrees (pointer in order to be written)
+ int *findDegrees(int *I, int *J, int nz, int M, int *totalDegrees){
+   int *degrees = (int *)calloc(M, sizeof(int));
+   *totalDegrees = 0;
 
-#define A(i,j)  *(A + (i) * n + (j))
+   // for every record
+   for(int i = 0; i < nz; i++){
+     // Omit self loops
+     if(I[i] != J[i]){
+       degrees[I[i]]++;
+       degrees[J[i]]++;
+       *totalDegrees += 2;
+     }
+   }
 
-// Utility function to find degree of each node of n-by-n adjacency matrix A
-int *findDegrees(bool *A, int n){
-  int *degrees = (int *)malloc(n * sizeof(int));
+   return degrees;
+ }
 
-  for (int i = 0; i < n; i++){
-    double count = 0;
+ // Utility function to find neighbors of each node
+ // I  --> rows recorded at .mtx file
+ // J  --> columns recorded at .mtx file
+ // nz --> nonzeros in .mtx file
+ // M  --> dimension of sparse matrix
+ // degrees      --> degree of each node
+ // totalDegrees --> the sum of all degrees
+ int **findNeighbors(int *I, int *J, int nz, int M, int *degrees, int totalDegrees){
+   // Initialize neighbors matrix
+   // row i will contain the neighbors of node i
+   int **neighbors = (int **)malloc(M * sizeof(int *));
+   neighbors[0] = (int *)malloc(totalDegrees * sizeof(int));
+   for(int i = 1; i < M; i++){
+     neighbors[i] = neighbors[i-1] + degrees[i-1];
+   }
 
-    for (int j = 0; j < n; j++){
-        count += (int) A(i,j);
-    }
+   // Keep track of current neighbors added for each node
+   int *neighborsCount = (int *)calloc(M, sizeof(int));
 
-    degrees[i] = count;
-  }
+   // for every record
+   for(int i = 0; i < nz; i++){
+     // Omit self loops
+     if(I[i] != J[i]){
+       neighbors[ J[i] ][ neighborsCount[J[i]] ] = I[i];
+       neighbors[ I[i] ][ neighborsCount[I[i]] ] = J[i];
+       neighborsCount[J[i]]++;
+       neighborsCount[I[i]]++;
+     }
+   }
 
-  return degrees;
-}
+   free(neighborsCount);
 
-/* Reverse Cuthill Mckee algorithm implementation
-  A --> n-by-n adjacency matrix
-  n --> dimension of A
-*/
-int *ReverseCuthillMckee(bool *A, const int n){
-  // Find degree for each node
-  int *degrees = findDegrees(A,n);
+   return neighbors;
+ }
 
-  // Initialize queue
-  queue *Q = queueInit(n);
-  if(Q ==  NULL){
-    fprintf(stderr, "Queue Init failed.\n");
-    exit(EXIT_FAILURE);
-  }
+ // Reverse Cuthill Mckee algorithm implementation
+ // I  --> rows recorded at .mtx file
+ // J  --> columns recorded at .mtx file
+ // nz --> nonzeros in .mtx file
+ // M  --> dimension of sparse matrix
+ int *ReverseCuthillMckee(int *I, int *J, int nz, int M){
+   // Find degree for each node
+   int totalDegrees;
+   int *degrees = findDegrees(I, J, nz, M, &totalDegrees);
 
-  // Initialize node elements
-  node *nodes = (node *)malloc(n * sizeof(node));
-  for(int i = 0; i < n; i++){
-    nodes[i].num = i;
-    nodes[i].degree = degrees[i];
-  }
+   // Initialize queue
+   queue *Q = queueInit(M);
+   if(Q ==  NULL){
+     fprintf(stderr, "Queue Init failed.\n");
+     exit(EXIT_FAILURE);
+   }
 
-  free(degrees);
+   // Initialize permutation array
+   int *R = (int *)malloc(M * sizeof(int));
+   // Initialize current permutation index
+   int Rcount = 0;
 
-  // Initialize permutation array
-  int *R = (int *)malloc(n * sizeof(int));
-  // Initialize current permutation index
-  int Rcount = 0;
+   // Initialize array which keeps track of visited nodes
+   bool *visited = (bool *)calloc(M, sizeof(bool));
 
-  // Initialize array which keeps track of visited nodes
-  bool *visited = (bool *)calloc(n, sizeof(bool));
+   // Find neighbors for each node
+   int **neighbors = findNeighbors(I, J, nz, M, degrees, totalDegrees);
 
-  while(Rcount < n){
-    // Find first node that has not been visited
-    // to be the starting minimum index
-    int minIndex = -1;
-    for(int i = 0; i < n; i++){
-      if(!visited[i]){
-        minIndex = i;
-        break;
-      }
-    }
-    // Assert that an index has been found
-    if(minIndex == -1){
-      fprintf(stderr, "An error has occured.\n");
-      exit(EXIT_FAILURE);
-    }
-    // Find minimum degree node index
-    for(int i = minIndex + 1; i < n; i++){
-      if(nodes[i].degree < nodes[minIndex].degree && !visited[i]){
-        minIndex = i;
-      }
-    }
+   // Loop until every node has been added to permutation array R
+   while(Rcount < M){
+     // Find first node that has not been visited
+     // to be the starting minimum index
+     int minIndex = -1;
+     for(int i = 0; i < M; i++){
+       if(!visited[i]){
+         minIndex = i;
+         break;
+       }
+     }
+     // Assert that an index has been found
+     if(minIndex == -1){
+       fprintf(stderr, "An error has occured.\n");
+       exit(EXIT_FAILURE);
+     }
+     // Find minimum degree node index
+     cilk_for(int i = minIndex + 1; i < M; i++){
+       if(degrees[i] < degrees[minIndex] && !visited[i]){
+         minIndex = i;
+       }
+     }
 
-    // Add that item to Q
-    queueAdd(Q, nodes[minIndex]);
-    // and mark it as visited
-    visited[minIndex] = true;
+     // Add that item to Q
+     node newNode;
+     newNode.num = minIndex;
+     newNode.degree = degrees[minIndex];
+     queueAdd(Q, newNode);
+     // and mark it as visited
+     visited[minIndex] = true;
 
-    while(!Q->empty){
-      // Extract element from Q
-      node qfront, newNode;
-      queueDel(Q, &qfront);
+     while(!Q->empty){
+       // Extract element from Q
+       node qfront;
+       queueDel(Q, &qfront);
 
-      // Keep track of start index of the new elements
-      // to be sorted later
-      int newElementsStartIndex = Q->tail;
+       // Keep track of start index of the new elements
+       // to be sorted later
+       int newElementsStartIndex = Q->tail;
 
-      // Find all non-visited neighboors of extracted element and add them to Q
-      for(int i = 0; i < n; i++){
-        if(i != qfront.num && A(qfront.num,i) && !visited[i]){
-          newNode.num = i;
-          newNode.degree = nodes[i].degree;
-          visited[i] = true;
-          queueAdd(Q, newNode);
-        }
-      }
+       // Find all non-visited neighbors of extracted element and add them to Q
+       for(int i = 0; i < degrees[qfront.num]; i++){
+         if(!visited[neighbors[qfront.num][i]]){
+           newNode.num = neighbors[qfront.num][i];
+           newNode.degree = degrees[neighbors[qfront.num][i]];
+           visited[neighbors[qfront.num][i]] = true;
+           queueAdd(Q, newNode);
+         }
+       }
 
-      // Sort new elements of queue in ascending order of degree
-      quickSort(Q->buf, newElementsStartIndex, Q->tail - 1);
+       // Sort new elements of queue in ascending order of degree
+       quickSort(Q->buf, newElementsStartIndex, Q->tail - 1);
 
-      // Add element to R
-      R[Rcount] = qfront.num;
-      Rcount++;
-    }
-  }
+       // Add element to R
+       R[Rcount] = qfront.num;
+       Rcount++;
+     }
+   }
 
-  free(visited);
-  free(nodes);
-  queueDelete(Q);
+   free(neighbors[0]);
+   free(neighbors);
+   free(degrees);
+   free(visited);
+   queueDelete(Q);
 
-  // Reverse permutation array
-  cilk_for(int i = 0; i < n/2; i++){
-    int temp = R[n-1-i];
-    R[n-1-i] = R[i];
-    R[i] = temp;
-  }
+   // Reverse permutation array
+   cilk_for(int i = 0; i < M/2; i++){
+     int temp = R[M-1-i];
+     R[M-1-i] = R[i];
+     R[i] = temp;
+   }
 
-  return R;
-}
+   return R;
+ }

@@ -13,7 +13,7 @@
 # ####################################################################
 #
 # 'make'        build executable file 'main'
-# 'make lib'	build the libraries .a
+# 'make lib'		build the libraries .a
 # 'make clean'  removes all .o and executable files
 #
 
@@ -45,7 +45,7 @@ SRC = RCM
 AUX = queue myQuickSort mmio
 
 # define the different possible executables
-TYPES = sequential
+TYPES = sequential cilk
 
 # define the executable file name
 MAIN = main
