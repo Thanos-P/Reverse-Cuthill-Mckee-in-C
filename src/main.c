@@ -14,8 +14,6 @@
 
 #include "mmio.h"
 
-#define A(i,j)  *(A + (i) * n + (j))
-
 int *ReverseCuthillMckee(int *I, int *J, int nz, int M);
 
 int main (int argc, char *argv[]){
@@ -66,7 +64,7 @@ int main (int argc, char *argv[]){
     fprintf(stderr, "Error: dimensions of sparse matrix not equal.");
 
   // Read values
-  printf("\nAllocating space...\n");
+  printf("Allocating space...\n");
   // Reseve memory for matrices
   I = (int *) malloc(nz * sizeof(int));
   J = (int *) malloc(nz * sizeof(int));

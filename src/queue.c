@@ -1,6 +1,7 @@
 /*
  * @file   queue.c
- * @author athanasps <athanasps@ece.auth.gr>
+ * @author Andrae Muys
+ * @editor athanasps <athanasps@ece.auth.gr>
  *         Thanos Paraskevas
  *
  */

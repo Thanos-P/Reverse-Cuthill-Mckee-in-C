@@ -35,6 +35,36 @@ int *findDegrees(int *I, int *J, int nz, int M, int *totalDegrees){
   return degrees;
 }
 
+// Utility function to find index of minimum degree node
+// that has not yet been visited
+// degrees --> degrees of all nodes
+// visited --> logical array that has true on all previously visited nodes
+// M       --> dimension of sparse matrix
+int findMinDegreeNode(int *degrees, bool *visited, int M){
+  // Find first node that has not been visited
+  // to be the starting minimum index
+  int minIndex = -1;
+  for(int i = 0; i < M; i++){
+    if(!visited[i]){
+      minIndex = i;
+      break;
+    }
+  }
+  // Assert that an index has been found
+  if(minIndex == -1){
+    fprintf(stderr, "An error has occured.\n");
+    exit(EXIT_FAILURE);
+  }
+  // Find minimum degree node index
+  for(int i = minIndex + 1; i < M; i++){
+    if(degrees[i] < degrees[minIndex] && !visited[i]){
+      minIndex = i;
+    }
+  }
+
+  return minIndex;
+}
+
 // Utility function to find neighbors of each node
 // I  --> rows recorded at .mtx file
 // J  --> columns recorded at .mtx file
@@ -47,6 +77,7 @@ int **findNeighbors(int *I, int *J, int nz, int M, int *degrees, int totalDegree
   // row i will contain the neighbors of node i
   int **neighbors = (int **)malloc(M * sizeof(int *));
   neighbors[0] = (int *)malloc(totalDegrees * sizeof(int));
+  // row i will contain degrees[i-1] elements
   for(int i = 1; i < M; i++){
     neighbors[i] = neighbors[i-1] + degrees[i-1];
   }
@@ -100,26 +131,8 @@ int *ReverseCuthillMckee(int *I, int *J, int nz, int M){
 
   // Loop until every node has been added to permutation array R
   while(Rcount < M){
-    // Find first node that has not been visited
-    // to be the starting minimum index
-    int minIndex = -1;
-    for(int i = 0; i < M; i++){
-      if(!visited[i]){
-        minIndex = i;
-        break;
-      }
-    }
-    // Assert that an index has been found
-    if(minIndex == -1){
-      fprintf(stderr, "An error has occured.\n");
-      exit(EXIT_FAILURE);
-    }
-    // Find minimum degree node index
-    for(int i = minIndex + 1; i < M; i++){
-      if(degrees[i] < degrees[minIndex] && !visited[i]){
-        minIndex = i;
-      }
-    }
+    // Find minimum degree node
+    int minIndex = findMinDegreeNode(degrees, visited, M);
 
     // Add that item to Q
     node newNode;
@@ -151,7 +164,7 @@ int *ReverseCuthillMckee(int *I, int *J, int nz, int M){
       // Sort new elements of queue in ascending order of degree
       quickSort(Q->buf, newElementsStartIndex, Q->tail - 1);
 
-      // Add element to R
+      // Add extracted element to R
       R[Rcount] = qfront.num;
       Rcount++;
     }
