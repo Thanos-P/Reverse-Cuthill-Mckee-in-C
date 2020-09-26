@@ -12,10 +12,13 @@ queue *queueInit (int queueSize)
 {
   queue *q;
 
+  // Initialize queue
   q = (queue *)malloc (sizeof (queue));
   if (q == NULL) return (NULL);
 
+  // Set global variable for later reference
   _queuesize = queueSize;
+  // Initialize buffer
   q->buf = (node *)malloc (_queuesize * sizeof(node));
 
   q->empty = 1;

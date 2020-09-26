@@ -58,7 +58,7 @@ int findMinDegreeNode(int *degrees, bool *visited, int M){
     exit(EXIT_FAILURE);
   }
   // Find minimum degree node index
-  cilk_for(int i = minIndex + 1; i < M; i++){
+  for(int i = minIndex + 1; i < M; i++){
     if(degrees[i] < degrees[minIndex] && !visited[i]){
       minIndex = i;
     }
@@ -79,7 +79,7 @@ int **findNeighbors(int *I, int *J, int nz, int M, int *degrees, int totalDegree
   // row i will contain the neighbors of node i
   int **neighbors = (int **)malloc(M * sizeof(int *));
   neighbors[0] = (int *)malloc(totalDegrees * sizeof(int));
-  // row i will contain degrees[i-1] elements
+  // row i will contain degrees[i] elements
   for(int i = 1; i < M; i++){
     neighbors[i] = neighbors[i-1] + degrees[i-1];
   }

@@ -2,3 +2,4 @@
 *.a
 main_*
 *.mtx
+*.csv

@@ -90,7 +90,7 @@ int main (int argc, char *argv[]){
   struct timeval startwtime, endwtime;
   double totaltime;
 
-  // Call RCM
+  // Call RCM and time
   gettimeofday(&startwtime, NULL);
   int *R = ReverseCuthillMckee(I, J, nz, M);
   gettimeofday(&endwtime, NULL);
@@ -98,14 +98,16 @@ int main (int argc, char *argv[]){
   totaltime = (double)((endwtime.tv_usec - startwtime.tv_usec)/1.0e6
             + endwtime.tv_sec - startwtime.tv_sec);
 
-  // // print results
-  // printf("\nPermutation array: ");
-  // for(int i = 0; i < M; i++){
-  //   printf("%d ", R[i]);
-  // }
-  // printf("\n");
-
   printf("\ntotal time: %f\n", totaltime);
+
+  // print results to file
+  // FILE *fp;
+  // fp = fopen("permutation.csv", "w");
+  // for(int i = 0; i < M-1; i++){
+  //   fprintf(fp, "%d,", R[i]);
+  // }
+  // fprintf(fp, "%d\n", R[M-1]);
+  // fclose(fp);
 
   free(R);
   free(I);
